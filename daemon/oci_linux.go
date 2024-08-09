@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/containerd/containerd/containers"
 	coci "github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/pkg/apparmor"
-	"github.com/containerd/containerd/pkg/userns"
 	"github.com/containerd/log"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
@@ -30,6 +28,7 @@ import (
 	"github.com/moby/sys/mount"
 	"github.com/moby/sys/mountinfo"
 	"github.com/moby/sys/user"
+	"github.com/moby/sys/userns"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
@@ -507,11 +506,9 @@ func inSlice(slice []string, s string) bool {
 }
 
 // withMounts sets the container's mounts
-func withMounts(daemon *Daemon, daemonCfg *configStore, c *container.Container, ms []container.Mount) coci.SpecOpts {
+func withMounts(daemon *Daemon, daemonCfg *configStore, c *container.Container, mounts []container.Mount) coci.SpecOpts {
 	return func(ctx context.Context, _ coci.Client, _ *containers.Container, s *coci.Spec) (err error) {
-		sort.Sort(mounts(ms))
-
-		mounts := ms
+		sortMounts(mounts)
 
 		userMounts := make(map[string]struct{})
 		for _, m := range mounts {
